@@ -1,12 +1,9 @@
 #!/bin/bash
 
-# This script setup Time Machine on Rasphberry Pi.
-# It assume /dev/sda1 is the paritation to export. 
+# This script setup Time Machine on Raspberry Pi.
+# It assume /dev/sda2 is the paritation to export. 
 
 function installNetatalk {
-  sudo apt-get update
-  sudo apt-get upgrade -y
-
   sudo apt-get install git
   mkdir -p /tmp/code
   pushd /tmp/code > /dev/null
@@ -61,15 +58,19 @@ function installNetatalk {
   rm -rf /tmp/code
 }
 
+sudo apt-get update
+sudo apt-get upgrade -y
+
 if ! command -v netatalk > /dev/null; then
   installNetatalk
 fi
 
-sudo umount /dev/sda1
+sudo apt-get install hfsplus hfsutils hfsprogs
+sudo umount /dev/sda2
 sudo mkdir -p /media/my_book
 sudo chown pi:pi /media/my_book
-sudo sed -i '/sda1/d' /etc/fstab
-sudo bash -c "echo '/dev/sda1       /media/my_book   ext4 noexec,defaults        0       0' >> /etc/fstab"
+sudo sed -i '/sda2/d' /etc/fstab
+sudo bash -c "echo '/dev/sda2       /media/my_book   hfsplus force,noexec,defaults        0       0' >> /etc/fstab"
 sudo mount -a
 
 sudo sed -i 's/^hosts:.*$/hosts:          files mdns4_minimal [NOTFOUND=return] dns mdns4 mdns/' /etc/nsswitch.conf
@@ -107,3 +108,11 @@ sudo service netatalk restart
 
 sudo update-rc.d avahi-daemon defaults
 sudo update-rc.d netatalk defaults
+
+# spin down harddisk after 20 minutes
+sudo apt-get install hdparm
+sudo bash -c 'cat >> /etc/hdparm.conf << "EOF"
+command_line {
+  hdparm -S 240 /dev/sda
+}
+EOF'
