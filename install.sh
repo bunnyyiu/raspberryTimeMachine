@@ -70,7 +70,8 @@ sudo umount /dev/sda2
 sudo mkdir -p /media/my_book
 sudo chown pi:pi /media/my_book
 sudo sed -i '/sda2/d' /etc/fstab
-sudo bash -c "echo '/dev/sda2       /media/my_book   hfsplus force,noexec,defaults        0       0' >> /etc/fstab"
+seqFSCK=$((`cat /etc/fstab | grep -v '^#' | awk '{print $6}' | sort | tail -1` + 1))
+sudo bash -c "echo '/dev/sda2       /media/my_book   hfsplus force,noexec,defaults        0       $seqFSCK' >> /etc/fstab"
 sudo mount -a
 
 sudo sed -i 's/^hosts:.*$/hosts:          files mdns4_minimal [NOTFOUND=return] dns mdns4 mdns/' /etc/nsswitch.conf
