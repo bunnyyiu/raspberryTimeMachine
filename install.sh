@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # This script setup Time Machine on Raspberry Pi.
-# It assume /dev/sda2 is the paritation to export. 
 
 function installNetatalk {
   sudo apt-get install git
@@ -31,10 +30,13 @@ function installNetatalk {
   libdbus-glib-1-dev \
   libglib2.0-dev \
   tracker \
-  libtracker-sparql-0.14-dev \
-  libtracker-miner-0.14-dev \
+  libtracker-sparql-1.0-dev \
+  libtracker-miner-1.0-dev \
   bison \
   libltdl-dev \
+  autoconf \
+  libtool-bin \
+  automake \
   avahi-daemon -y
   
   ./bootstrap
@@ -46,7 +48,7 @@ function installNetatalk {
   --enable-krbV-uam \
   --with-pam-confdir=/etc/pam.d \
   --with-dbus-sysconf-dir=/etc/dbus-1/system.d \
-  --with-tracker-pkgconfig-version=0.14
+  --with-tracker-pkgconfig-version=1.0
   
   make
   sudo make install
@@ -66,12 +68,24 @@ if ! command -v netatalk > /dev/null; then
 fi
 
 sudo apt-get install hfsplus hfsutils hfsprogs
-sudo umount /dev/sda2
+
+read -p "Please enter the usb storage device name, default is sdb2" deviceName
+if [ "$deviceName" == "" ]; then
+  deviceName="sdb2"
+fi
+sudo umount /dev/$deviceName
 sudo mkdir -p /media/my_book
 sudo chown pi:pi /media/my_book
-sudo sed -i '/sda2/d' /etc/fstab
+deviceUUID=`ls -l /dev/disk/by-uuid/ | grep sdb2 | awk '{print $9}'`
+
+if [ "$deviceUUID" == "" ]; then
+  exit 1
+fi
+sudo apt-get install hfsplus hfsutils hfsprogs
+sudo sed -i "/^\/dev\/$deviceName/d" /etc/fstab
+sudo sed -i "/^UUID=$deviceUUID/d" /etc/fstab
 seqFSCK=$((`cat /etc/fstab | grep -v '^#' | awk '{print $6}' | sort | tail -1` + 1))
-sudo bash -c "echo '/dev/sda2       /media/my_book   hfsplus force,noexec,defaults        0       $seqFSCK' >> /etc/fstab"
+sudo bash -c "echo 'UUID=$deviceUUID /media/my_book hfsplus force,noexec,defaults,nofail 0 $seqFSCK' >> /etc/fstab"
 sudo mount -a
 
 sudo sed -i 's/^hosts:.*$/hosts:          files mdns4_minimal [NOTFOUND=return] dns mdns4 mdns/' /etc/nsswitch.conf
