@@ -10,7 +10,7 @@ function installNetatalk {
   git clone git://git.code.sf.net/p/netatalk/code netatalk
   pushd netatalk > /dev/null
   
-  git checkout netatalk-3-1-7
+  git checkout netatalk-3.1.8
   
   sudo apt-get install build-essential \
   libevent-dev \
@@ -93,8 +93,12 @@ sudo bash -c 'cat > /etc/avahi/services/afpd.service << "EOF"
 </service-group>
 EOF'
 
-sudo bash -c 'cat > /usr/local/etc/afp.conf << "EOF"
+interfaces=`ip -o link show | awk -F': ' '{print $2}' | \
+sed /lo/d | sed -n -e 'H;${x;s/\n/,/g;s/^,//;p;}'`
+
+sudo bash -c "cat > /usr/local/etc/afp.conf << 'EOF'
 [Global]
+  apf interfaces = $interfaces
   log level = default:warn
   log file = /var/log/afpd.log
   mimic model = TimeCapsule6,106
@@ -102,7 +106,7 @@ sudo bash -c 'cat > /usr/local/etc/afp.conf << "EOF"
 [Time Machine]
   path = /media/my_book
   time machine = yes
-EOF'
+EOF"
 
 sudo service avahi-daemon restart
 sudo service netatalk restart
