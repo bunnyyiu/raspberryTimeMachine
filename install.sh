@@ -67,25 +67,22 @@ if ! command -v netatalk > /dev/null; then
   installNetatalk
 fi
 
-sudo apt-get install hfsplus hfsutils hfsprogs
-
-read -p "Please enter the usb storage device name, default is sdb2" deviceName
+read -p "Please enter the usb storage device name, default is sda1" deviceName
 if [ "$deviceName" == "" ]; then
-  deviceName="sdb2"
+  deviceName="sda1"
 fi
 sudo umount /dev/$deviceName
 sudo mkdir -p /media/my_book
 sudo chown pi:pi /media/my_book
-deviceUUID=`ls -l /dev/disk/by-uuid/ | grep sdb2 | awk '{print $9}'`
+deviceUUID=`ls -l /dev/disk/by-uuid/ | grep sda1 | awk '{print $9}'`
 
 if [ "$deviceUUID" == "" ]; then
   exit 1
 fi
-sudo apt-get install hfsplus hfsutils hfsprogs
 sudo sed -i "/^\/dev\/$deviceName/d" /etc/fstab
 sudo sed -i "/^UUID=$deviceUUID/d" /etc/fstab
 seqFSCK=$((`cat /etc/fstab | grep -v '^#' | awk '{print $6}' | sort | tail -1` + 1))
-sudo bash -c "echo 'UUID=$deviceUUID /media/my_book hfsplus force,noexec,defaults,nofail 0 $seqFSCK' >> /etc/fstab"
+sudo bash -c "echo 'UUID=$deviceUUID /media/my_book ext4 noexec,defaults,nofail 0 $seqFSCK' >> /etc/fstab"
 sudo mount -a
 
 sudo sed -i 's/^hosts:.*$/hosts:          files mdns4_minimal [NOTFOUND=return] dns mdns4 mdns/' /etc/nsswitch.conf
