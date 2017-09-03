@@ -8,9 +8,9 @@ function installNetatalk {
   pushd /tmp/code > /dev/null
   git clone git://git.code.sf.net/p/netatalk/code netatalk
   pushd netatalk > /dev/null
-  
+
   git checkout netatalk-3.1.8
-  
+
   sudo apt-get install build-essential \
   libevent-dev \
   libssl-dev \
@@ -38,7 +38,7 @@ function installNetatalk {
   libtool-bin \
   automake \
   avahi-daemon -y
-  
+
   ./bootstrap
   ./configure \
   --with-init-style=debian-sysv \
@@ -49,7 +49,7 @@ function installNetatalk {
   --with-pam-confdir=/etc/pam.d \
   --with-dbus-sysconf-dir=/etc/dbus-1/system.d \
   --with-tracker-pkgconfig-version=1.0
-  
+
   make
   sudo make install
   make clean
@@ -87,23 +87,6 @@ sudo mount -a
 
 sudo sed -i 's/^hosts:.*$/hosts:          files mdns4_minimal [NOTFOUND=return] dns mdns4 mdns/' /etc/nsswitch.conf
 
-sudo bash -c 'cat > /etc/avahi/services/afpd.service << "EOF"
-<?xml version="1.0" standalone="no"?><!--*-nxml-*-->
-<!DOCTYPE service-group SYSTEM "avahi-service.dtd">
-<service-group>
-    <name replace-wildcards="yes">%h</name>
-    <service>
-        <type>_afpovertcp._tcp</type>
-        <port>548</port>
-    </service>
-    <service>
-        <type>_device-info._tcp</type>
-        <port>0</port>
-        <txt-record>model=TimeCapsule</txt-record>
-    </service>
-</service-group>
-EOF'
-
 interfaces=`ip -o link show | awk -F': ' '{print $2}' | \
 sed /lo/d | sed -n -e 'H;${x;s/\n/,/g;s/^,//;p;}'`
 
@@ -113,11 +96,14 @@ sudo bash -c "cat > /usr/local/etc/afp.conf << 'EOF'
   log level = default:warn
   log file = /var/log/afpd.log
   mimic model = TimeCapsule6,106
+  vol dbpath = /var/netatalk/CNID/$u/$v/
 
 [Time Machine]
   path = /media/my_book
   time machine = yes
 EOF"
+
+sudo mkdir -p "/var/netatalk/CNID/pi/Time Machine/"
 
 sudo service avahi-daemon restart
 sudo service netatalk restart
